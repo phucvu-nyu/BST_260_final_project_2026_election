@@ -1,13 +1,14 @@
-# Loading necessary library
+# Load necessary libraries
 library(ggplot2)
 library(shiny)
 library(tidyverse)
+library(shinyBS) 
 
 source("./helper_functions/helper_functions.R")
 
 # Define the UI
 ui <- fluidPage(
-  titlePanel("Bayesian Forest Plot"),
+  titlePanel("2024 Senate Election Prediction by Phuc Vu for BST260"),
   
   sidebarLayout(
     sidebarPanel(
@@ -35,15 +36,33 @@ ui <- fluidPage(
         value = as.Date("2016-01-01"),
         format = "yyyy-mm-dd"
       ),
+      # Tau input with information icon
       sliderInput(
         "tau_input",
         "Select your prior belief about standard deviation of poll:",
         min = 0.01, max = 0.1, value = 0.035, step = 0.001
       ),
+      actionLink("tau_info", "ℹ️"), # Small "i" icon for information
+      bsPopover(
+        id = "tau_info",
+        title = "Information about Tau",
+        content = "A value of 0.035 means that you believe the true difference range from you prior mean ± 100*(0.035)*2 or mean ± 7",
+        placement = "right",
+        trigger = "hover"
+      ),
+      # Factor input with information icon
       sliderInput(
         "factor_input",
-        "Select Factor Parameter:",
+        "Select how much a party winning in the past will tip your prior in favor of the candidate of that party",
         min = 0, max = 10, value = 5, step = 0.1
+      ),
+      actionLink("factor_info", "ℹ️"), # Small "i" icon for information
+      bsPopover(
+        id = "factor_info",
+        title = "Information about Factor",
+        content = "If you choose 4, you assume that the REP candidate have (3-1)*4 higher point compared to a DEM candidate if a REP candidate won 3 times and a DEM candidate won 1 time in the past ",
+        placement = "right",
+        trigger = "hover"
       ),
       dateInput(
         "polls_from",
@@ -51,16 +70,23 @@ ui <- fluidPage(
         value = as.Date("2018-01-01"),
         format = "yyyy-mm-dd"
       ),
-      actionButton("run", "Generate Forest Plot"),
-      actionButton("run_chair_plot", "Generate Chair Plot"), # New button for chair plot
+      actionButton("run", "Generate Prediction for the chosen State"),
+      actionButton("run_chair_plot", "Generate Prediction for number of Democrat chairs"), 
       br(),
-      downloadButton("download_data", "Download Plot Data") # Add download button
+      downloadButton("download_data", "Download Plot Data for state election prediction") 
     ),
     
     mainPanel(
+      h4("Note:"),
+      p(
+        "If there is an error, it means that we do not have any polling data to support your chosen period of time, state, voter type, or pollster quality. 
+    Please adjust these parameters."
+      ),
+      br(),
       h4("Forest Plot:"),
       plotOutput("forest_plot", width = "100%", height = "1000px"), # Display the forest plot
-      textOutput("no_data_message"), # Add a text output for messages
+      textOutput("no_data_message"), 
+      br(),
       h4("Chair Prediction Plot:"), # New header for chair plot
       plotOutput("chair_plot", width = "100%", height = "500px") # Display the chair plot
     )
@@ -84,7 +110,7 @@ server <- function(input, output, session) {
   
   # Generate the plot data when inputs are updated
   plot_data <- reactive({
-    req(user_inputs()) # Ensure user_inputs() is not NULL
+    req(user_inputs()) 
     bayesian_estimate(
       data = clean_dat,
       state_input = user_inputs()$state_input,
@@ -93,7 +119,7 @@ server <- function(input, output, session) {
       prior_from = user_inputs()$prior_from,
       cycle_input = 2024,
       tau_input = user_inputs()$tau_input,
-      factor = user_inputs()$factor_input, # Pass the new factor parameter
+      factor = user_inputs()$factor_input, 
       polls_from = user_inputs()$polls_from
     )
   })
